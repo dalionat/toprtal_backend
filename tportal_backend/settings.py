@@ -51,6 +51,15 @@ INSTALLED_APPS = [
     'project_mgmt.apps.ProjectMgmtConfig',
 ]
 
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:8081',
+# ]
+
+
+
 MIDDLEWARE = [
     # cors settings
     'corsheaders.middleware.CorsMiddleware',

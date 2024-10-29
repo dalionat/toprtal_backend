@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from project_mgmt.models import Project, ProjectStatus, ProjectType
+from project_mgmt.models import Project, ProjectStatus, ProjectType, ProjectCalendar
 from django.contrib.auth.models import User
 from dashboard_mgmt.models import UserProfile
 
@@ -34,3 +34,9 @@ class ProjectStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectStatus
         fields = ('project_status_id', 'title')
+        
+        
+class ProjectCalendarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectCalendar
+        fields = ('project_calendar_id', 'title')

@@ -61,7 +61,7 @@ class ProjectStatus(models.Model):
 
     
 class ProjectCalendar(models.Model):
-    project_calnedar_id = models.AutoField(primary_key=True)
+    project_calendar_id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now=False, auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
