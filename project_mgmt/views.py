@@ -1,7 +1,11 @@
 from django.shortcuts import render
+from re import sub
 
 # Create your views here.
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+from rest_framework.authtoken.models import Token
 from rest_framework.parsers import JSONParser
 from django.http.response import JsonResponse
 from rest_framework import viewsets
@@ -9,14 +13,15 @@ from rest_framework import viewsets
 # Create your views here.
 from project_mgmt.models import Project, ProjectStatus, ProjectType, ProjectCalendar
 from project_mgmt.serializers import ProjectSerializer, ProjectStatusSerializer, ProjectTypeSerializer, ManagerSerializer
-from project_mgmt.serializers import ProjectCalendarSerializer
+from project_mgmt.serializers import ProjectCalendarSerializer, TaskSerializer
 from dashboard_mgmt.models import UserProfile
 from django.contrib.auth.models import User
 from organization_mgmt.models import Department
-from .models import ProjectStatus, ProjectType, ProjectCalendar
+from .models import ProjectStatus, ProjectType, ProjectCalendar, Task
 
 
 @csrf_exempt
+@permission_classes([IsAuthenticated])
 def projectApi(request, id=0):
     if request.method == 'GET':
         projects = Project.objects.all()
@@ -24,15 +29,24 @@ def projectApi(request, id=0):
         return JsonResponse(projects_serialaizer.data, safe=False)
 
     elif request.method == 'POST':
-        project_data = JSONParser().parse(request)
+        header_token = request.META.get('HTTP_AUTHORIZATION', None)
+        if header_token is not None:
+            try:
+                token = sub('Token ', '', header_token)
+                token_obj = Token.objects.get(key=token)
+                curr_user = token_obj.user
+            except Token.DoesNotExist:
+                return JsonResponse("Project failed to save", safe=False)
         
+        project_data = JSONParser().parse(request)
         dep = Department.objects.get(department_id=project_data["department"])
         status = ProjectStatus.objects.get(project_status_id=project_data["status"])
         type = ProjectType.objects.get(project_type_id=project_data["project_type"])
         calendar = ProjectCalendar.objects.get(project_calendar_id=project_data["calendar"])
         manager  = User.objects.get(id=project_data["manager"])
-        created_by = User.objects.get(id=project_data["user"])
-        updated_by = User.objects.get(id=project_data["user"])
+        created_by = curr_user
+        updated_by = curr_user
+        
         p = Project(title=project_data["title"],
                     description = project_data["description"],
                     department = dep,
@@ -45,13 +59,7 @@ def projectApi(request, id=0):
                     end_date = project_data["end_date"],
                     calendar = calendar)
         p.save()            
-        
-        
-        # projects_serializer = ProjectSerializer(data=project_data)
-        # if projects_serializer.is_valid():
-        #     projects_serializer.save()
-        #     return JsonResponse("Added Successfully", safe=False)
-        return JsonResponse("Failed To create Project", safe=False)
+        return JsonResponse("Project Saved", safe=False)
 
     elif request.method == 'PUT':
         project_data = JSONParser().parse(request)
@@ -67,6 +75,17 @@ def projectApi(request, id=0):
         project = Project.objects.get(ProjectId=id)
         project.delete()
         return JsonResponse("Deleted Successfully", safe=False)
+
+
+@csrf_exempt
+def taskApi(request, project_id):
+    header_token = request.META.get('HTTP_AUTHORIZATION', None)
+    if header_token is None:
+        return JsonResponse("", safe=False)
+    if request.method == 'GET':
+        tasks = Task.objects.filter(project_id = project_id)
+        task_serializer = TaskSerializer(tasks, many=True)
+        return JsonResponse(task_serializer.data, safe=False)   
     
 @csrf_exempt
 def projectStatusApi(request):
